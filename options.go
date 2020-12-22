@@ -91,7 +91,7 @@ func (o *SessionOptions) dsn() string {
 		user = o.User + "@"
 	}
 
-	var port int
+	var port int = 445
 	if o.Port > 0 && o.Port < 0xFFFF {
 		port = o.Port
 	}

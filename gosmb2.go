@@ -2,7 +2,7 @@ package gosmb2
 
 /*
 #cgo CFLAGS: -I./include
-#cgo LDFLAGS: -L./lib -lsmb2
+#cgo LDFLAGS: -L./lib -lsmb2 -lkrb5
 #include "gosmb2.h"
 */
 import "C"

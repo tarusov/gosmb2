@@ -9,6 +9,7 @@ package smb
 import "C"
 import (
 	"errors"
+	"fmt"
 )
 
 // context is handler for smb2_context type in Go.
@@ -96,6 +97,9 @@ type context struct {
 
 // mkContext creates new smb2_context instance.
 func mkContext() (*context, error) {
+
+	fmt.Println("!!! mkContext")
+
 	result := C.smb2_init_context()
 	if result == nil {
 		return nil, errors.New("failed to init smb2 context")

@@ -10,19 +10,21 @@ import "C"
 import (
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
 )
 
 // Share interface is handler for connection with share.
 type Share interface {
-	OpenFile(filename string, mode int) (File, error)
-
-	Close() // Close established connection.
+	Echo() error                                      // Send echo request to server.
+	OpenFile(filename string, mode int) (File, error) // Open shared file.
+	Close()                                           // Close established connection.
 }
 
-// Dial create new session with share. URL must be like "//127.0.0.1/qqck"
+// Dial create new session with share. URL must be like "//127.0.0.1/share"
 func Dial(urlstr string, auth *Auth) (Share, error) {
+
+	fmt.Println("!!! Dial")
+
 	ctx, err := mkContext()
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial: %v", err)
@@ -31,13 +33,12 @@ func Dial(urlstr string, auth *Auth) (Share, error) {
 	return mkShare(ctx, auth, urlstr)
 }
 
-// conn is connection state handler.
+// share is connection state handler.
 type share struct {
-	ctx  *context
-	auth *Auth
+	ctx *context
 }
 
-// mkConn create new connection instance.
+// mkShare create new connection instance.
 func mkShare(ctx *context, auth *Auth, urlstr string) (*share, error) {
 	if !ctx.ok() {
 		return nil, fmt.Errorf("failed to connect share: %v", ErrContextIsNil)
@@ -57,11 +58,16 @@ func mkShare(ctx *context, auth *Auth, urlstr string) (*share, error) {
 		C.smb2_set_security_mode(ctx.ptr, C.SMB2_NEGOTIATE_SIGNING_ENABLED)
 	}
 
-	C.smb2_set_domain(ctx.ptr, C.CString(auth.Domain))
-	C.smb2_set_password(ctx.ptr, C.CString(auth.Password))
-	if host, err := os.Hostname(); err == nil {
-		C.smb2_set_workstation(ctx.ptr, C.CString(host))
+	if len(auth.Domain) > 0 {
+		C.smb2_set_domain(ctx.ptr, C.CString(auth.Domain))
 	}
+	if len(auth.Password) > 0 {
+		C.smb2_set_password(ctx.ptr, C.CString(auth.Password))
+	}
+	/*
+		if host, err := os.Hostname(); err == nil {
+			C.smb2_set_workstation(ctx.ptr, C.CString(host))
+		}*/
 
 	uri, err := url.Parse(urlstr)
 	if err != nil {
@@ -77,17 +83,19 @@ func mkShare(ctx *context, auth *Auth, urlstr string) (*share, error) {
 		parts = parts[1:]
 	}
 
+	fmt.Println("!!! connect to", parts[0])
+
 	if result := C.smb2_connect_share(
 		ctx.ptr,
 		C.CString(uri.Host),
 		C.CString(parts[0]),
 		C.CString(auth.Username),
 	); result < 0 {
-		return nil, fmt.Errorf("failed to connect share: %v", lastError(ctx))
+		return nil, fmt.Errorf("failed to connect share: %d %v", result, lastError(ctx))
 	}
+
 	return &share{
-		ctx:  ctx,
-		auth: auth,
+		ctx: ctx,
 	}, nil
 }
 
@@ -96,24 +104,41 @@ func (s *share) ok() bool {
 	return s != nil && s.ctx != nil
 }
 
-// close close current connection.
+// disconnect close current connection.
 func (s *share) disconnect() {
 	if s.ok() {
 		C.smb2_disconnect_share(s.ctx.ptr)
 	}
 }
 
-// Close impl Conn interface,
+// Close impl Share interface method,
 // free all resources for connection.
 func (s *share) Close() {
 	s.disconnect()
 	s.ctx.free() // keep last!
 }
 
+// OpenFile impl Share interface method.
 func (s *share) OpenFile(filename string, mode int) (File, error) {
 	if !s.ok() {
 		return nil, fmt.Errorf("failed to open file: %v", ErrContextIsNil)
 	}
 
 	return mkFileHandler(s.ctx, filename, mode)
+}
+
+// Echo send request.
+func (s *share) Echo() error {
+	if !s.ok() {
+		return fmt.Errorf("failed to send echo request: %v", ErrContextIsNil)
+	}
+
+	fmt.Println("!!! Echo")
+
+	result := C.smb2_echo(s.ctx.ptr)
+	if result != 0 {
+		return fmt.Errorf("failed to send echo request: %d %v", result, lastError(s.ctx))
+	}
+
+	return nil
 }

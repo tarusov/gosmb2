@@ -16,6 +16,8 @@ import (
 // File is interface for fileHandler.
 type File interface {
 	// Stat returns file data.
+	Read(p []byte) (n int, err error)
+	Seek(offset int64, whence int) (int64, error)
 	Stat() (os.FileInfo, error)
 
 	// Close current file.
@@ -27,7 +29,7 @@ type file struct {
 	path string
 	ctx  *context
 	ptr  C.fileHandlerPtr
-	pos  C.ulonglong
+	pos  uint
 }
 
 // mkFileHandler creates new smb2fh instance.
@@ -96,7 +98,7 @@ func (f *file) Read(p []byte) (n int, err error) {
 			f.ptr,
 			bufChunkPtr,
 			maxBufSize,
-			f.pos,
+			C.ulonglong(f.pos),
 		)
 		if count == 0 {
 			return n, nil // finished successful.
@@ -113,8 +115,8 @@ func (f *file) Read(p []byte) (n int, err error) {
 			p[i+n] = bufChunk[i]
 		}
 
-		n += int(count)             // inc read bytes.
-		f.pos += C.ulonglong(count) // move file pos.
+		n += int(count)      // inc read bytes.
+		f.pos += uint(count) // move file pos.
 	}
 }
 
@@ -138,17 +140,20 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 		fwh = C.SEEK_END
 	}
 
+	curr := C.ulonglong(f.pos)
+
 	pos := C.smb2_lseek(
 		f.ctx.ptr,
 		f.ptr,
-		C.longlong(offset),
+		C.int64_t(offset),
 		C.int(fwh),
-		&f.pos)
+		&curr,
+	)
 	if pos < 0 {
 		return 0, fmt.Errorf("failed to seek pos into file: %v", lastError(f.ctx))
 	}
 
-	f.pos = C.ulonglong(pos) // shift offset.
+	f.pos = uint(pos) // shift offset.
 
 	return int64(pos), nil
 }

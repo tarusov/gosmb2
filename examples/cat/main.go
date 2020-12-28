@@ -9,18 +9,36 @@ import (
 )
 
 func main() {
-	share, err := smb.Dial("//127.0.0.1:445/sharex", &smb.Auth{
-		Type:     smb.AuthTypeNTLM,
-		Domain:   "WORKGROUP",
-		Username: "zaqxsw",
-		Password: "zaqxsw1",
-	})
+	/*
+		auth := &smb.Auth{
+			Type:     smb.AuthTypeNTLM,
+			Domain:   "wincp-32",
+			Username: "pangeo",
+			Password: "Pangeoacess*",
+		}
+	*/
+	auth := &smb.Auth{
+		Type: smb.AuthTypeNegotiate,
+		//	Domain:   "WORKGROUP",
+		//	Username: "zaqxsw",
+		//	Password: "zaqxsw1",
+	}
+
+	share, err := smb.Dial("//127.0.0.1/public", auth)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 	defer share.Close()
 
-	f, err := share.OpenFile("rd", os.O_RDONLY)
+	for i := 0; i < 3; i++ {
+		err := share.Echo()
+		if err != nil {
+			fmt.Println("echo error", err.Error())
+		}
+	}
+
+	f, err := share.OpenFile("hello.txt", os.O_RDONLY)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,5 +49,19 @@ func main() {
 		log.Fatal(err)
 	}
 
+	_, err = f.Seek(5, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	buf := make([]byte, 1024)
+	_, err = f.Read(buf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(string(buf))
+
 	fmt.Println(i.ModTime())
+
 }

@@ -34,7 +34,7 @@ func mkDirHandler(ctx *context, path string) (*dir, error) {
 	}
 	result := C.smb2_opendir(ctx.ptr, C.CString(path))
 	if result == nil {
-		return nil, fmt.Errorf("failed to open file: %v", lastError(ctx))
+		return nil, fmt.Errorf("failed to open file: %v", ctx.lastError())
 	}
 	return &dir{
 		path: path,

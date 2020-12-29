@@ -32,7 +32,7 @@ func stat(ctx *context, path string) (os.FileInfo, error) {
 
 	result := C.smb2_stat(ctx.ptr, C.CString(path), &data)
 	if result < 0 {
-		return nil, fmt.Errorf("failed to get stat: %d %v", result, lastError(ctx))
+		return nil, fmt.Errorf("failed to get stat: %d %v", result, ctx.lastError())
 	}
 
 	var entryType int

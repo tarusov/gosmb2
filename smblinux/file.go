@@ -29,7 +29,7 @@ func mkFileHandler(ctx *context, path string, mode int) (*file, error) {
 	}
 	result := C.smb2_open(ctx.ptr, C.CString(path), C.int(mode))
 	if result == nil {
-		return nil, fmt.Errorf("failed to open file: %v", lastError(ctx))
+		return nil, fmt.Errorf("failed to open file: %v", ctx.lastError())
 	}
 	return &file{
 		path: path,

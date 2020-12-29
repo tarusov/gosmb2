@@ -150,7 +150,7 @@ func (s *share) Echo() error {
 
 	result := C.smb2_echo(s.ctx.ptr)
 	if result != 0 {
-		return fmt.Errorf("failed to send echo request: %d %v", result, lastError(s.ctx))
+		return fmt.Errorf("failed to send echo request: %d %v", result, s.ctx.lastError())
 	}
 
 	return nil

@@ -49,7 +49,7 @@ func (f *file) Read(p []byte) (n int, err error) {
 			continue // need to read again.
 		}
 		if count < 0 {
-			return 0, lastError(f.ctx) // recv error.
+			return 0, f.ctx.lastError() // recv error.
 		}
 
 		// Copy to p from chunk.
@@ -92,7 +92,7 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 		&curr,
 	)
 	if pos < 0 {
-		return 0, fmt.Errorf("failed to seek pos into file: %v", lastError(f.ctx))
+		return 0, fmt.Errorf("failed to seek pos into file: %v", f.ctx.lastError())
 	}
 
 	f.pos = uint(pos) // shift offset.
@@ -113,7 +113,7 @@ func mkConnect(ctx *context, server, share, user string) error {
 		C.CString(share),
 		userptr,
 	); result < 0 {
-		return fmt.Errorf("failed to connect share: %d %v", result, lastError(ctx))
+		return fmt.Errorf("failed to connect share: %d %v", result, ctx.lastError())
 	}
 
 	return nil

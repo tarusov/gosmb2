@@ -1,6 +1,13 @@
 // +build windows
 
-import "github.com/tarusov/gosmb2/internal/smbwinnt"
+package smb
+
+import (
+	"errors"
+
+	"github.com/tarusov/gosmb2/model"
+	"github.com/tarusov/gosmb2/smbwinnt"
+)
 
 // Dial create new session with share. URL must be like "//127.0.0.1/share"
 func Dial(urlstr string, auth *model.Auth) (model.Share, error) {

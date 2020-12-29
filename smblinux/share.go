@@ -118,9 +118,10 @@ func (s *share) disconnect() {
 
 // Close impl Share interface method,
 // free all resources for connection.
-func (s *share) Close() {
+func (s *share) Close() error {
 	s.disconnect()
 	s.ctx.free() // keep last!
+	return nil
 }
 
 // OpenFile impl Share interface method.

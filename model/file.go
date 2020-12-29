@@ -7,5 +7,5 @@ type File interface {
 	Read(p []byte) (n int, err error)             // Read from file no buffer (impl io.Reader).
 	Seek(offset int64, whence int) (int64, error) // Seek position into file.
 	Stat() (os.FileInfo, error)                   // Get file statistic.
-	Close()                                       // Close current file.
+	Close() error                                 // Close current file.
 }

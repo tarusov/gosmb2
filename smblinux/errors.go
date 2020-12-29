@@ -26,8 +26,8 @@ const (
 	ErrInvalidResourcePath Error = "invalid resource path"
 )
 
-// LastError returns last smb2 error from smb2_context in go format.
-func lastError(ctx *context) error {
+// lastError returns last smb2 error from smb2_context in go format.
+func (ctx *context) lastError() error {
 	result := C.smb2_get_error(ctx.ptr)
 	return errors.New(C.GoString(result))
 }

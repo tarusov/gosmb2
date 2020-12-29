@@ -56,8 +56,9 @@ func (d *dir) close() {
 }
 
 // Close impl File interface method.
-func (d *dir) Close() {
+func (d *dir) Close() error {
 	d.close()
+	return nil
 }
 
 // Stat impl File interface method.

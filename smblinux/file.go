@@ -51,8 +51,9 @@ func (f *file) close() {
 }
 
 // Close impl File interface method.
-func (f *file) Close() {
+func (f *file) Close() error {
 	f.close()
+	return nil
 }
 
 // Stat impl File interface method.

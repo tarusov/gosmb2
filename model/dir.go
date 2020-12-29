@@ -21,5 +21,5 @@ type DirEntry struct {
 // Dir is interface for smb2 directory.
 type Dir interface {
 	List() ([]*DirEntry, error) // List returns directory files.
-	Close()                     // Closes current directory.
+	Close() error               // Closes current directory.
 }

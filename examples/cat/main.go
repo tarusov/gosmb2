@@ -25,7 +25,7 @@ func main() {
 		//Password: "zaqxsw1",
 	}
 
-	share, err := smb.Dial("//127.0.0.1/public", auth)
+	share, err := smb.Dial("//192.168.2.8/public", auth)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)

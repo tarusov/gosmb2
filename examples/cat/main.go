@@ -47,6 +47,7 @@ func main() {
 	}()
 
 	// Stat.
+
 	i, err := f.Stat()
 	if err != nil {
 		log.Fatal(err)

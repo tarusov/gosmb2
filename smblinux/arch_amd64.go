@@ -57,7 +57,7 @@ func (f *file) Read(p []byte) (n int, err error) {
 		}
 
 		// Copy to p from chunk.
-		for i := 0; i < len(bufChunk); i++ {
+		for i := 0; i < int(count); i++ {
 			p[i+n] = bufChunk[i]
 		}
 
@@ -86,14 +86,12 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 		fwh = C.SEEK_END
 	}
 
-	curr := C.ulong(f.pos)
-
 	pos := C.smb2_lseek(
 		f.ctx.ptr,
 		f.ptr,
 		C.int64_t(offset),
 		C.int(fwh),
-		&curr,
+		C.ulong(f.pos),
 	)
 	if pos < 0 {
 		return 0, fmt.Errorf("failed to seek pos into file: %v", f.ctx.lastError())

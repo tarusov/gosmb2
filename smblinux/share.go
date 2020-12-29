@@ -41,8 +41,8 @@ func (c *context) ok() bool {
 }
 
 // lastError returns last smb2 error from smb2_context in go format.
-func (ctx *context) lastError() error {
-	result := C.smb2_get_error(ctx.ptr)
+func (c *context) lastError() error {
+	result := C.smb2_get_error(c.ptr)
 	return errors.New(C.GoString(result))
 }
 
@@ -83,11 +83,7 @@ func Dial(urlstr string, auth *model.Auth) (model.Share, error) {
 	if len(auth.Password) > 0 {
 		C.smb2_set_password(ctx.ptr, C.CString(auth.Password))
 	}
-	/*
-		if host, err := os.Hostname(); err == nil {
-			C.smb2_set_workstation(ctx.ptr, C.CString(host))
-		}
-	*/
+
 	uri, err := url.Parse(urlstr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect share: %v", err)

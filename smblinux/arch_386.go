@@ -51,11 +51,11 @@ func (f *file) Read(p []byte) (n int, err error) {
 			continue // need to read again.
 		}
 		if count < 0 {
-			return 0, lastError(f.ctx) // recv error.
+			return 0, f.ctx.lastError() // recv error.
 		}
 
 		// Copy to p from chunk.
-		for i := 0; i < len(count); i++ {
+		for i := 0; i < int(count); i++ {
 			p[i+n] = bufChunk[i]
 		}
 
@@ -92,7 +92,7 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 		C.ulonglong(f.pos),
 	)
 	if pos < 0 {
-		return 0, fmt.Errorf("failed to seek pos into file: %v", lastError(f.ctx))
+		return 0, fmt.Errorf("failed to seek file pos: %v", f.ctx.lastError())
 	}
 
 	f.pos = uint(pos) // shift offset.

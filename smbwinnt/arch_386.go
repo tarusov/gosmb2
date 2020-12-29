@@ -50,7 +50,7 @@ func (f *file) Read(p []byte) (n int, err error) {
 			bufChunkPtr,
 			maxBufSize,
 			f.pos,
-			uintptr(0),
+			uintptr(0), // OFFSET
 		)
 
 		if err != syscall.Errno(0) {
@@ -83,9 +83,6 @@ func (f *file) Read(p []byte) (n int, err error) {
 //  int64_t smb2_lseek(struct smb2_context *smb2, struct smb2fh *fh,
 // 	int64_t offset, int whence, uint64_t *current_offset);
 func (f *file) Seek(offset int64, whence int) (int64, error) {
-
-	fmt.Println("!!! SEEK")
-
 	if !f.ok() {
 		return 0, fmt.Errorf("failed to seek file pos: %v", model.ErrContextIsNil)
 	}

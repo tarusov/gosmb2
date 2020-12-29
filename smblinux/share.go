@@ -1,3 +1,5 @@
+// +build linux
+
 package smblinux
 
 /*
@@ -11,7 +13,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/tarusov/gosmb2/model"
@@ -37,6 +38,12 @@ func mkContext() (*context, error) {
 // ok check ptr state for instance.
 func (c *context) ok() bool {
 	return c != nil && c.ptr != nil
+}
+
+// lastError returns last smb2 error from smb2_context in go format.
+func (ctx *context) lastError() error {
+	result := C.smb2_get_error(ctx.ptr)
+	return errors.New(C.GoString(result))
 }
 
 // Free current smb2_context.
@@ -76,16 +83,17 @@ func Dial(urlstr string, auth *model.Auth) (model.Share, error) {
 	if len(auth.Password) > 0 {
 		C.smb2_set_password(ctx.ptr, C.CString(auth.Password))
 	}
-	if host, err := os.Hostname(); err == nil {
-		C.smb2_set_workstation(ctx.ptr, C.CString(host))
-	}
-
+	/*
+		if host, err := os.Hostname(); err == nil {
+			C.smb2_set_workstation(ctx.ptr, C.CString(host))
+		}
+	*/
 	uri, err := url.Parse(urlstr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect share: %v", err)
 	}
 
-	// extract share name from uri ()
+	// extract share name from uri
 	parts := strings.Split(uri.Path, "/")
 	if len(parts) == 0 {
 		return nil, fmt.Errorf("failed to connect share: %v", ErrInvalidResourcePath)
@@ -94,7 +102,7 @@ func Dial(urlstr string, auth *model.Auth) (model.Share, error) {
 		parts = parts[1:]
 	}
 
-	err = mkConnect(ctx, uri.Host, parts[0], auth.Username)
+	err = conn(ctx, uri.Host, parts[0], auth.Username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial: %v", err)
 	}
@@ -127,7 +135,7 @@ func (s *share) Close() error {
 // OpenFile impl Share interface method.
 func (s *share) OpenFile(filename string, mode int) (model.File, error) {
 	if !s.ok() {
-		return nil, fmt.Errorf("failed to open file: %v", ErrContextIsNil)
+		return nil, fmt.Errorf("failed to open file: %v", model.ErrContextIsNil)
 	}
 
 	return mkFileHandler(s.ctx, filename, mode)
@@ -136,7 +144,7 @@ func (s *share) OpenFile(filename string, mode int) (model.File, error) {
 // OpenDir impl Share interface method.
 func (s *share) OpenDir(filename string) (model.Dir, error) {
 	if !s.ok() {
-		return nil, fmt.Errorf("failed to open file: %v", ErrContextIsNil)
+		return nil, fmt.Errorf("failed to open file: %v", model.ErrContextIsNil)
 	}
 
 	return mkDirHandler(s.ctx, filename)
@@ -145,7 +153,7 @@ func (s *share) OpenDir(filename string) (model.Dir, error) {
 // Echo send request.
 func (s *share) Echo() error {
 	if !s.ok() {
-		return fmt.Errorf("failed to send echo request: %v", ErrContextIsNil)
+		return fmt.Errorf("failed to send echo request: %v", model.ErrContextIsNil)
 	}
 
 	result := C.smb2_echo(s.ctx.ptr)

@@ -13,6 +13,8 @@ import "C"
 import (
 	"fmt"
 	"io"
+
+	"github.com/tarusov/gosmb2/model"
 )
 
 // Read impl File interface method.
@@ -21,7 +23,7 @@ import (
 // 	uint8_t *buf, uint32_t count, uint64_t offset);
 func (f *file) Read(p []byte) (n int, err error) {
 	if !f.ok() {
-		return 0, fmt.Errorf("failed to read file: %v", ErrContextIsNil)
+		return 0, fmt.Errorf("failed to read file: %v", model.ErrContextIsNil)
 	}
 
 	maxBufSize := C.smb2_get_max_read_size(f.ctx.ptr)
@@ -49,11 +51,11 @@ func (f *file) Read(p []byte) (n int, err error) {
 			continue // need to read again.
 		}
 		if count < 0 {
-			return 0, f.ctx.lastError() // recv error.
+			return 0, lastError(f.ctx) // recv error.
 		}
 
 		// Copy to p from chunk.
-		for i := 0; i < len(bufChunk); i++ {
+		for i := 0; i < len(count); i++ {
 			p[i+n] = bufChunk[i]
 		}
 
@@ -82,17 +84,15 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 		fwh = C.SEEK_END
 	}
 
-	curr := C.ulonglong(f.pos)
-
 	pos := C.smb2_lseek(
 		f.ctx.ptr,
 		f.ptr,
 		C.int64_t(offset),
 		C.int(fwh),
-		&curr,
+		C.ulonglong(f.pos),
 	)
 	if pos < 0 {
-		return 0, fmt.Errorf("failed to seek pos into file: %v", f.ctx.lastError())
+		return 0, fmt.Errorf("failed to seek pos into file: %v", lastError(f.ctx))
 	}
 
 	f.pos = uint(pos) // shift offset.
@@ -100,8 +100,8 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 	return int64(pos), nil
 }
 
-// mkConnect create new connection with server.
-func mkConnect(ctx *context, server, share, user string) error {
+// conn create new connection with server.
+func conn(ctx *context, server, share, user string) error {
 	userptr := C.CString(user)
 	if len(user) == 0 {
 		userptr = nil

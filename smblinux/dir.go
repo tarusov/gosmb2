@@ -21,20 +21,19 @@ type dir struct {
 	path string
 	ctx  *context
 	ptr  C.dirHandlerPtr
-	pos  uint
 }
 
 // mkDirHandler creates new smb2fh instance.
 func mkDirHandler(ctx *context, path string) (*dir, error) {
 	if !ctx.ok() {
-		return nil, fmt.Errorf("failed to open dir: %v", ErrContextIsNil)
+		return nil, fmt.Errorf("failed to open dir: %v", model.ErrContextIsNil)
 	}
 	if path == "." {
 		path = ""
 	}
 	result := C.smb2_opendir(ctx.ptr, C.CString(path))
 	if result == nil {
-		return nil, fmt.Errorf("failed to open file: %v", ctx.lastError())
+		return nil, fmt.Errorf("failed to open dir: %v", ctx.lastError())
 	}
 	return &dir{
 		path: path,
@@ -64,7 +63,7 @@ func (d *dir) Close() error {
 // Stat impl File interface method.
 func (d *dir) Stat() (os.FileInfo, error) {
 	if !d.ok() {
-		return nil, fmt.Errorf("failed to get dir stat: %v", ErrContextIsNil)
+		return nil, fmt.Errorf("failed to get dir stat: %v", model.ErrContextIsNil)
 	}
 
 	return stat(d.ctx, d.path)
@@ -73,7 +72,7 @@ func (d *dir) Stat() (os.FileInfo, error) {
 // List impl Dir interface method.
 func (d *dir) List() ([]*model.DirEntry, error) {
 	if !d.ok() {
-		return nil, fmt.Errorf("failed to read dir: %v", ErrContextIsNil)
+		return nil, fmt.Errorf("failed to read dir: %v", model.ErrContextIsNil)
 	}
 
 	entries := make([]*model.DirEntry, 0)

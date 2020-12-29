@@ -13,7 +13,10 @@ import "C"
 import (
 	"fmt"
 	"io"
+	"syscall"
 	"unsafe"
+
+	"github.com/tarusov/gosmb2/model"
 )
 
 // Read impl File interface method.
@@ -22,7 +25,7 @@ import (
 // 	uint8_t *buf, uint32_t count, uint64_t offset);
 func (f *file) Read(p []byte) (n int, err error) {
 	if !f.ok() {
-		return 0, fmt.Errorf("failed to read file: %v", ErrContextIsNil)
+		return 0, fmt.Errorf("failed to read file: %v", model.ErrContextIsNil)
 	}
 
 	maxBufSize := C.smb2_get_max_read_size(f.ctx.ptr)
@@ -101,19 +104,30 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 	return int64(pos), nil
 }
 
-// mkConnect create new connection with server.
-func mkConnect(ctx *context, server, share, user string) error {
-	var userPtr *C.char
+// conn create new connection with server.
+func conn(ctx *context, host, share, user string) error {
+	if !ctx.ok() {
+		return nil, fmt.Errorf("failed to connect: %v", model.ErrContextIsNil)
+	}
 
-	if len(user) > 0 {
-		userPtr = (*C.char)(unsafe.Pointer(&[]byte(user)[0]))
+	hostPtr, err := syscall.BytePtrFromString(host)
+	if err != nil {
+		return 0, err
+	}
+	sharePtr, err := syscall.BytePtrFromString(share)
+	if err != nil {
+		return 0, err
+	}
+	userPtr, err := syscall.BytePtrFromString(user)
+	if err != nil {
+		return 0, err
 	}
 
 	if result := C.smb2_connect_share(
 		ctx.ptr,
-		C.CString(server),
-		C.CString(share),
-		userPtr,
+		uintptr(unsafe.Pointer(hostPtr)),
+		uintptr(unsafe.Pointer(sharePtr)),
+		uintptr(unsafe.Pointer(userPtr)),
 	); result < 0 {
 		return fmt.Errorf("failed to connect share: %d %v", result, ctx.lastError())
 	}

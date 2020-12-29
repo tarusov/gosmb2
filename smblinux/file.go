@@ -12,6 +12,8 @@ import "C"
 import (
 	"fmt"
 	"os"
+
+	"github.com/tarusov/gosmb2/model"
 )
 
 // file is hanlder for smb2fh type in Go. Implements File interface.
@@ -25,7 +27,7 @@ type file struct {
 // mkFileHandler creates new smb2fh instance.
 func mkFileHandler(ctx *context, path string, mode int) (*file, error) {
 	if !ctx.ok() {
-		return nil, fmt.Errorf("failed to open file: %v", ErrContextIsNil)
+		return nil, fmt.Errorf("failed to open file: %v", model.ErrContextIsNil)
 	}
 	result := C.smb2_open(ctx.ptr, C.CString(path), C.int(mode))
 	if result == nil {
@@ -59,7 +61,7 @@ func (f *file) Close() error {
 // Stat impl File interface method.
 func (f *file) Stat() (os.FileInfo, error) {
 	if !f.ok() {
-		return nil, fmt.Errorf("failed to get file stat: %v", ErrContextIsNil)
+		return nil, fmt.Errorf("failed to get file stat: %v", model.ErrContextIsNil)
 	}
 
 	return stat(f.ctx, f.path)

@@ -10,14 +10,6 @@ import (
 )
 
 func main() {
-	/*
-		auth := &smb.Auth{
-			Type:     smb.AuthTypeNTLM,
-			Domain:   "wincp-32",
-			Username: "pangeo",
-			Password: "Pangeoacess*",
-		}
-	*/
 	auth := &model.Auth{
 		Type: model.AuthTypeNegotiate,
 		//Domain:   "WORKGROUP",
@@ -27,10 +19,14 @@ func main() {
 
 	share, err := smb.Dial("//192.168.2.8/public", auth)
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		log.Fatal(err)
 	}
-	defer share.Close()
+	defer func() {
+		err := share.Close()
+		if err != nil {
+			log.Printf("close file: %v", err)
+		}
+	}()
 
 	for i := 0; i < 3; i++ {
 		err := share.Echo()
@@ -43,29 +39,41 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		err := f.Close()
+		if err != nil {
+			log.Printf("close file: %v", err)
+		}
+	}()
 
+	// Stat.
 	i, err := f.Stat()
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("successful get stat. file created at ", i.ModTime())
 
-	_, err = f.Seek(5, 0)
+	// Seek.
+
+	_, err = f.Seek(8, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("successful seek pos")
+
+	// Read.
 
 	buf := make([]byte, 1024)
-	_, err = f.Read(buf)
+	n, err := f.Read(buf)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(string(buf))
+	fmt.Println("successful read. msg: ", string(buf[:n]))
 
-	fmt.Println(i.ModTime())
+	// List dir.
 
-	d, err := share.OpenDir("")
+	d, err := share.OpenDir(".")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -77,6 +85,6 @@ func main() {
 	}
 
 	for _, f := range files {
-		fmt.Println(f.Name, f.Type, f.Size)
+		fmt.Printf("%s\t%s\t%d\n", f.Name, f.Type, f.Size)
 	}
 }

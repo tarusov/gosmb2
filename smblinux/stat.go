@@ -1,3 +1,5 @@
+// +build linux
+
 package smblinux
 
 /*
@@ -11,6 +13,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/tarusov/gosmb2/model"
 )
 
 // Avaliable samba entry types.
@@ -22,13 +26,10 @@ const (
 
 func stat(ctx *context, path string) (os.FileInfo, error) {
 	if !ctx.ok() {
-		return nil, fmt.Errorf("failed to get stat: %v", ErrContextIsNil)
+		return nil, fmt.Errorf("failed to get stat: %v", model.ErrContextIsNil)
 	}
 
-	var (
-		data C.fileInfo
-		//vfs  C.vfsInfo
-	)
+	var data C.fileInfo
 
 	result := C.smb2_stat(ctx.ptr, C.CString(path), &data)
 	if result < 0 {
@@ -49,7 +50,7 @@ func stat(ctx *context, path string) (os.FileInfo, error) {
 		name:      path,
 		entryType: entryType,
 		size:      int64(data.smb2_size),
-		modTime:   time.Unix(int64(data.smb2_mtime), 0),
+		modTime:   time.Unix(int64(data.smb2_mtime), int64(data.smb2_mtime_nsec)),
 	}, nil
 }
 
